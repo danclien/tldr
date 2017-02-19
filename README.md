@@ -7,6 +7,8 @@ Thanks for your time!
 
 Dan
 
+P.S. Had an epiphany Sunday morning and rewrote the code using `State`. FWIW, [here's the code](https://github.com/danclien/tldr/tree/state).
+
 ## Personal Notes
 
 ### Time Breakdown
