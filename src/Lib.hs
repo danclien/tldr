@@ -2,8 +2,11 @@ module Lib
   ( normalize
   ) where
 
-import SimpleParser
-import Control.Applicative
+import Control.Applicative ((<|>), some, many)
+import Control.Monad (forM_)
+import Data.List (intersperse)
+import SimpleParser (SimpleParser, alphaNum, char, parse, string)
+import State (State(..), get, put)
 
 data PathItem = PathSegment String
               | Seperator
@@ -12,39 +15,37 @@ data PathItem = PathSegment String
               deriving (Eq, Show)
 
 normalize :: String -> String
-normalize = pathItemsToString . prependSeperatorIfNeeded . normalizeUntilDone . fst . head . parse pathItems
+normalize = pathItemsToString . normalizePathItems . parseString
 
--- Repeat until '..'s are gone
-normalizeUntilDone :: [PathItem] -> [PathItem]
-normalizeUntilDone input =
-  let result = normalizePathItems input
-  in if any (\item -> item == Up) result
-     then normalizeUntilDone result
-     else result
+parseString :: String -> [PathItem]
+parseString = fst . head . parse pathItems
 
+-- Use 'State' to build a stack of 'PathSegement's and 'Up's
 normalizePathItems :: [PathItem] -> [PathItem]
-normalizePathItems = normalizePathItems' . prependSeperatorIfNeeded . gotoFirstPathSegment
+normalizePathItems items =
+  let filtered = filter (\item -> (item /= Seperator) && (item /= Current)) items
+      f a = do
+        s <- get
+        case a of
+          ps@(PathSegment _) -> put (ps:s)
+          Up -> case s of
+            []     -> return ()
+            (_:xs) -> do
+              put xs
+              return ()
+          _ -> return ()
+      m = forM_ filtered f
+      normalized = snd $ runState m []
+      intersperseSeperators = intersperse Seperator normalized
+      withEndingSeperator = if hasEndingSeperator items
+                            then Seperator:intersperseSeperators
+                            else intersperseSeperators
+  in Seperator:(reverse withEndingSeperator)
 
--- Traverse the list and remove one level of continuous '..'
-normalizePathItems' :: [PathItem] -> [PathItem]
-normalizePathItems' []                                    = []
-normalizePathItems' (Seperator:(Current:xs))              = normalizePathItems' xs
-normalizePathItems' (Seperator:(_:(Seperator:(Up:xs))))   = normalizePathItems' xs
-normalizePathItems' (x:xs)                                = x:(normalizePathItems' xs)
 
--- Removes need for special cases in normalizePathItems where the path starts with '.'s or '..'s
-gotoFirstPathSegment :: [PathItem] -> [PathItem]
-gotoFirstPathSegment input = dropWhile (isNotPathSegment) input
-
-isNotPathSegment :: PathItem -> Bool
-isNotPathSegment (PathSegment _) = False
-isNotPathSegment _               = True
-
--- Removes need for special cases in normalizePathItems where the path doesn't need a leading slash
-prependSeperatorIfNeeded :: [PathItem] -> [PathItem]
-prependSeperatorIfNeeded []              = []
-prependSeperatorIfNeeded a@(Seperator:_) = a
-prependSeperatorIfNeeded xs              = (Seperator:xs)
+hasEndingSeperator :: [PathItem] -> Bool
+hasEndingSeperator [] = False
+hasEndingSeperator xs = last xs == Seperator
 
 -- Convert to 'String'
 pathItemsToString :: [PathItem] -> String

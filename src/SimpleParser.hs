@@ -1,7 +1,13 @@
-module SimpleParser where
+module SimpleParser
+  ( SimpleParser
+  , alphaNum
+  , char
+  , parse
+  , string
+  ) where
 
 import Data.Char (isAlphaNum)
-import Control.Monad
+import Control.Monad (ap, join, liftM)
 import Control.Applicative (Alternative(..))
 
 newtype SimpleParser a =

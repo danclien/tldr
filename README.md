@@ -1,30 +1,15 @@
 # TLDR
 
-I ended up hitting 3 hours with the code so I'm calling it done. Any feedback
-appreciated.
-
-Thanks for your time!
-
-Dan
-
 ## Personal Notes
 
-### Time Breakdown
-* 15 minutes - Setting up the project and tests
-* 75 minutes - Writing a simple parser (Hutton-Meijer)
-* 90 minutes - Working through the problem
-
 ### If I had more time
-* Look for a faster solution
 * Error handlings for invalid parse results
-* Clean up `import` and export lists
-* Tests for the parser
+* Tests for `SimpleParser` and `State`
 * `hlint`
 * Haddock documentation
 
 ### Cyclomatic complexity
-* `normalizeUntilDone` is `O(n^2)`
-  * It only removes one `..` in a continuous list of `..`. Worse case scenario is a path like ``/a/b/c/d/e/f/g/h/i/../../../../../../../../../j``.
+Complexity should be `O(n)` as it traverses the stack.
 
 ### CPU cache effects
 My best guest is there will be mostly cache misses due to the use of linked
